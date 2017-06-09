@@ -55,6 +55,23 @@ class DebugproxyPlugin {
               },
             },
           },
+          deploy: {
+            usage: 'Create a tunnel to allow the Function to access your dev machine',
+            lifecycleEvents: [
+              'deploy',
+              'tunnelize',
+            ],
+            options: {
+              host: {
+                usage: 'The function-acessible hostname for this dev machine, defaults to "spawn and grab from Ngrok".',
+                shortcut: 'h',
+              },
+              port: {
+                usage: 'The local server port, defaults to 5000.',
+                shortcut: 'p',
+              },
+            },
+          },
         },
       },
     };
@@ -67,6 +84,7 @@ class DebugproxyPlugin {
       'after:deploy:functions': this.afterDeployFunctions.bind(this),
 
       'debug:tunnelize:tunnelize': () => BbPromise.bind(this).then(this.tunnelize),
+      'debug:deploy:deploy': () => BbPromise.bind(this).then(this.debugDeploy),
     };
   }
   beforeDeployResources() {
@@ -91,6 +109,20 @@ class DebugproxyPlugin {
 
   afterDeployFunctions() {
     console.log('After Deploy Functions');
+  }
+
+  debugDeploy() {
+    throw new this.serverless.classes.Error('Congrats. It tried to "debug deploy"');
+
+    return new BbPromise((resolve, reject) => {
+      // Code the meat!
+
+      if (status.error) {
+        reject(status.error);
+      } else {
+        resolve();
+      }
+    });
   }
 
   tunnelize() {
