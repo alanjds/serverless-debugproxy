@@ -18,7 +18,10 @@
  * - Good luck, serverless.com :)
  */
 
-class BoilerplatePlugin {
+const BbPromise = require('bluebird');
+
+
+class DebugproxyPlugin {
   constructor(serverless, options) {
     this.serverless = serverless;
     this.options = options;
@@ -37,6 +40,23 @@ class BoilerplatePlugin {
           },
         },
       },
+      debug: {
+        usage: 'Allows functions to be proxied tru your machine, then debugged just-in-time',
+        commands: {
+          tunnelize: {
+            usage: 'Create a tunnel to allow the Function to access your dev machine',
+            lifecycleEvents: [
+              'tunnelize',
+            ],
+            options: {
+              port: {
+                usage: 'The local server port, defaults to 5000.',
+                shortcut: 'p',
+              },
+            },
+          },
+        },
+      },
     };
     this.hooks = {
       'before:deploy:resources': this.beforeDeployResources.bind(this),
@@ -45,6 +65,8 @@ class BoilerplatePlugin {
       'before:deploy:functions': this.beforeDeployFunctions.bind(this),
       'deploy:functions': this.deployFunctions.bind(this),
       'after:deploy:functions': this.afterDeployFunctions.bind(this),
+
+      'debug:tunnelize:tunnelize': () => BbPromise.bind(this).then(this.tunnelize),
     };
   }
   beforeDeployResources() {
@@ -70,16 +92,21 @@ class BoilerplatePlugin {
   afterDeployFunctions() {
     console.log('After Deploy Functions');
   }
+
+  tunnelize() {
+    throw new this.serverless.classes.Error('Congrats. It tried to tunnelize');
+
+    return new BbPromise((resolve, reject) => {
+      var status = child_process.spawnSync('ngrok', [] /* cli options */, { stdio: 'inherit' });
+      if (status.error) {
+        reject(status.error);
+      } else {
+        resolve();
+      }
+    });
+  }
 }
 
-module.exports = BoilerplatePlugin;
-
-//parameters: [ // Use paths when you multiple values need to be input (like an array).  Input looks like this: "serverless custom run module1/function1 module1/function2 module1/function3.  Serverless will automatically turn this into an array and attach it to evt.options within your plugin
-//  {
-//    parameter: 'paths',
-//    description: 'One or multiple paths to your function',
-//    position: '0->' // Can be: 0, 0-2, 0->  This tells Serverless which params are which.  3-> Means that number and infinite values after it.
-//  }
-//]
+module.exports = DebugproxyPlugin;
 
 // Godspeed!
