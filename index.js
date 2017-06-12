@@ -27,22 +27,37 @@ class DebugproxyPlugin {
     this.options = options;
 
     this.commands = {
-      custom: {
-        usage: 'A custom command from the boilerplate plugin',
-        lifecycleEvents: [
-          'resources',
-          'functions'
-        ],
+      debug: {
+        usage: 'deploy a function that proxies tru your machine, instead of the real function',
         options: {
-          option: {  // These must be specified in the CLI like this "-option true" or "-o true"
-            shortcut:    'o',
-            usage: 'test option 1',
+          host: {
+            usage: 'The function-acessible hostname on this dev machine. Defaults to "spawn and grab from Ngrok".',
+            shortcut: 'h',
+          },
+          port: {
+            usage: 'The local server port, defaults to 5000.',
           },
         },
-      },
-      debug: {
-        usage: 'Allows functions to be proxied tru your machine, then debugged just-in-time',
+        lifecycleEvents: [
+          'deploy',
+          'tunnelize',
+        ],
         commands: {
+          serve: {
+            usage: 'Serve the functions locally, to be accessed from the debug function deployed',
+
+            options: {
+              host: {
+                usage: 'The function-acessible hostname for this dev machine, defaults to "spawn and grab from Ngrok".',
+                shortcut: 'h',
+              },
+              port: {
+                usage: 'The local server port, defaults to 5000.',
+                shortcut: 'p',
+              },
+            },
+          },
+
           tunnelize: {
             usage: 'Create a tunnel to allow the Function to access your dev machine',
             lifecycleEvents: [
@@ -55,74 +70,38 @@ class DebugproxyPlugin {
               },
             },
           },
-          deploy: {
-            usage: 'Create a tunnel to allow the Function to access your dev machine',
-            lifecycleEvents: [
-              'deploy',
-              'tunnelize',
-            ],
-            options: {
-              host: {
-                usage: 'The function-acessible hostname for this dev machine, defaults to "spawn and grab from Ngrok".',
-                shortcut: 'h',
-              },
-              port: {
-                usage: 'The local server port, defaults to 5000.',
-                shortcut: 'p',
-              },
-            },
-          },
         },
       },
     };
     this.hooks = {
-      'before:deploy:resources': this.beforeDeployResources.bind(this),
-      'deploy:resources': this.deployResources.bind(this),
-      'after:deploy:resources': this.afterDeployResources.bind(this),
-      'before:deploy:functions': this.beforeDeployFunctions.bind(this),
-      'deploy:functions': this.deployFunctions.bind(this),
-      'after:deploy:functions': this.afterDeployFunctions.bind(this),
+      'before:package:createDeploymentArtifacts': () => BbPromise.bind(this)
+        .then(this.replacePackWithDebugproxy),
 
+      // I would like to use just one hook, but am still newbie here.
       'debug:tunnelize:tunnelize': () => BbPromise.bind(this).then(this.tunnelize),
-      'debug:deploy:deploy': () => BbPromise.bind(this).then(this.debugDeploy),
+      'debug:tunnelize': () => BbPromise.bind(this).then(this.tunnelize),
+      'debug:deploy': () => BbPromise.bind(this).then(this.debugDeploy),
     };
-  }
-  beforeDeployResources() {
-    console.log('Before Deploy Resources');
-  }
-
-  deployResources() {
-    console.log('Deploy Resources');
-  }
-
-  afterDeployResources() {
-    console.log('After Deploy Resources');
-  }
-
-  beforeDeployFunctions() {
-    console.log('Before Deploy Functions');
-  }
-
-  deployFunctions() {
-    console.log('Deploying function: ', this.options.function);
-  }
-
-  afterDeployFunctions() {
-    console.log('After Deploy Functions');
   }
 
   debugDeploy() {
-    throw new this.serverless.classes.Error('Congrats. It tried to "debug deploy"');
+    this.serverless.cli.log('WARN: debugDeploy ran.');
 
-    return new BbPromise((resolve, reject) => {
-      // Code the meat!
 
-      if (status.error) {
-        reject(status.error);
-      } else {
-        resolve();
-      }
-    });
+    return this.serverless.pluginManager.spawn('deploy');
+  }
+
+  replacePackWithDebugproxy() {
+    this.serverless.cli.log('/!\ WARNING /!\: Replacing pack with Debug Proxy one...');
+
+    //return BbPromise.all([
+    //  fse.copyAsync(
+    //    path.resolve(__dirname, 'wsgi.py'),
+    //    path.join(this.serverless.config.servicePath, 'wsgi.py')),
+    //  fse.writeFileAsync(
+    //    path.join(this.serverless.config.servicePath, '.wsgi_app'),
+    //    this.wsgiApp)
+    //]);
   }
 
   tunnelize() {
