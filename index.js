@@ -39,8 +39,8 @@ class DebugproxyPlugin {
           },
         },
         lifecycleEvents: [
-          'deploy',
           'tunnelize',
+          'deploy',
         ],
         commands: {
           serve: {
