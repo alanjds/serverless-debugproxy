@@ -98,15 +98,15 @@ class DebugproxyPlugin {
       var port = 80;
 
       ngrok.connect(this.options.port);
-      ngrok.once('connect', function(url){
+      ngrok.once('connect', url => {
         debugger
         console.log('ngrok connected: ' + url);
         host = url;
       });
-      ngrok.once('disconnect', function(url){
+      ngrok.once('disconnect', url => {
         console.log('ngrok disconnected: ' + url);
       });
-      ngrok.once('error', function(err, url){
+      ngrok.once('error', (err, url) => {
         console.log('ngrok error: ' + err + ' on url: ' + url);
         reject(ngrok.error);
       });
