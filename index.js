@@ -19,6 +19,9 @@
  */
 
 const BbPromise = require('bluebird');
+const http = require('http');
+const fs = require('fs');
+const ngrok = require('ngrok');
 
 
 class DebugproxyPlugin {
@@ -39,7 +42,10 @@ class DebugproxyPlugin {
           },
         },
         lifecycleEvents: [
+          'injectenvs',
           'tunnelize',
+          'injectenvs',
+          'injectproxyfunc',
           'deploy',
         ],
         commands: {
@@ -74,47 +80,89 @@ class DebugproxyPlugin {
       },
     };
     this.hooks = {
-      'before:package:createDeploymentArtifacts': () => BbPromise.bind(this)
-        .then(this.replacePackWithDebugproxy),
-
       // I would like to use just one hook, but am still newbie here.
       'debug:tunnelize:tunnelize': () => BbPromise.bind(this).then(this.tunnelize),
       'debug:tunnelize': () => BbPromise.bind(this).then(this.tunnelize),
+
+      'debug:injectenvs': () => BbPromise.bind(this).then(this.injectEnvs),
+      'debug:injectproxycode': () => BbPromise.bind(this).then(this.injectProxyCode),
       'debug:deploy': () => BbPromise.bind(this).then(this.debugDeploy),
     };
   }
 
-  debugDeploy() {
-    this.serverless.cli.log('WARN: debugDeploy ran.');
-
-
-    return this.serverless.pluginManager.spawn('deploy');
-  }
-
-  replacePackWithDebugproxy() {
-    this.serverless.cli.log('/!\ WARNING /!\: Replacing pack with Debug Proxy one...');
-
-    //return BbPromise.all([
-    //  fse.copyAsync(
-    //    path.resolve(__dirname, 'wsgi.py'),
-    //    path.join(this.serverless.config.servicePath, 'wsgi.py')),
-    //  fse.writeFileAsync(
-    //    path.join(this.serverless.config.servicePath, '.wsgi_app'),
-    //    this.wsgiApp)
-    //]);
-  }
-
   tunnelize() {
-    throw new this.serverless.classes.Error('Congrats. It tried to tunnelize');
-
     return new BbPromise((resolve, reject) => {
-      var status = child_process.spawnSync('ngrok', [] /* cli options */, { stdio: 'inherit' });
+      console.log("NGROK PORT: " + this.options.port);
+
+      var host = '';
+      var port = 80;
+
+      ngrok.connect(this.options.port);
+      ngrok.once('connect', function(url){
+        debugger
+        console.log('ngrok connected: ' + url);
+        host = url;
+      });
+      ngrok.once('disconnect', function(url){
+        console.log('ngrok disconnected: ' + url);
+      });
+      ngrok.once('error', function(err, url){
+        console.log('ngrok error: ' + err + ' on url: ' + url);
+        reject(ngrok.error);
+      });
+
+      // Localhost port passed to ngrok. Replace with external tunnel one.
+      this.options.port = port;
+      this.options.host = host;
+
+      // Ready to rock!
+      resolve();
+
+      //throw new this.serverless.classes.Error('Congrats. It tried to tunnelize');
       if (status.error) {
         reject(status.error);
       } else {
         resolve();
       }
     });
+  }
+
+  injectEnvs() {
+    this.serverless.cli.log('WARN: injectEnvs ran.');
+
+    var provider = this.serverless.service.provider;
+    if (!provider.environment){
+      provider.environment = {};
+    }
+
+    this.options.host = this.options.host || 'localhost';
+    provider.environment['DEBUGPROXY_HOST'] = this.options.host
+    this.options.port = this.options.port || 5000;
+    provider.environment['DEBUGPROXY_TARGET'] = this.options.port
+  }
+
+  injectProxyCode() {
+    this.serverless.cli.log('/!\ WARNING /!\: Replacing pack with Debug Proxy one...');
+
+    // The proxy is made on nodejs
+    this.serverless.service.provider.runtime = 'nodejs6.10';
+    for (let func of Object.values(this.serverless.service.functions)){
+      func.handler = 'debughandler.debugfunction'
+    }
+
+    // Inject (copy) the baked proxy code into the zip.
+    return BbPromise.all([
+      fse.copyAsync(
+        path.resolve(__dirname, 'debughandler.js'),
+        path.join(this.serverless.config.servicePath, 'debughandler.js'),
+      ),
+    ]);
+  }
+
+  debugDeploy() {
+    this.serverless.cli.log('WARN: debugDeploy ran.');
+
+    return this.serverless.pluginManager.spawn('deploy');
   }
 }
 
