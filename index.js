@@ -91,39 +91,29 @@ class DebugproxyPlugin {
   }
 
   tunnelize() {
+    var host = '';
+    var port = 80;
+
     return new BbPromise((resolve, reject) => {
-      console.log("NGROK PORT: " + this.options.port);
-
-      var host = '';
-      var port = 80;
-
       ngrok.connect(this.options.port);
       ngrok.once('connect', url => {
-        debugger
-        console.log('ngrok connected: ' + url);
+        console.log('ngrok connected: ['+ url + ' => localhost:' + this.options.port + ']');
         host = url;
+        resolve();
       });
       ngrok.once('disconnect', url => {
         console.log('ngrok disconnected: ' + url);
       });
       ngrok.once('error', (err, url) => {
         console.log('ngrok error: ' + err + ' on url: ' + url);
-        reject(ngrok.error);
+        reject(err);
       });
-
+      return (resolve, reject)
+    }).then((resolve, reject) => {
       // Localhost port passed to ngrok. Replace with external tunnel one.
       this.options.port = port;
       this.options.host = host;
-
       // Ready to rock!
-      resolve();
-
-      //throw new this.serverless.classes.Error('Congrats. It tried to tunnelize');
-      if (status.error) {
-        reject(status.error);
-      } else {
-        resolve();
-      }
     });
   }
 
