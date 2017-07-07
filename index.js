@@ -45,7 +45,7 @@ class DebugproxyPlugin {
           'injectenvs',
           'tunnelize',
           'injectenvs',
-          'injectproxyfunc',
+          'injectdebugfunction',
           'deploy',
         ],
         commands: {
@@ -87,7 +87,7 @@ class DebugproxyPlugin {
       'debug:injectenvs': () => BbPromise.bind(this).then(this.injectEnvs),
       'debug:tunnelize:injectenvs': BbPromise.bind(this).then(this.injectEnvs),
 
-      'debug:injectproxycode': () => BbPromise.bind(this).then(this.injectProxyCode),
+      'debug:injectdebugfunction': () => BbPromise.bind(this).then(this.injectDebugFunction),
       'debug:deploy': () => BbPromise.bind(this).then(this.debugDeploy),
     };
   }
@@ -134,7 +134,7 @@ class DebugproxyPlugin {
     provider.environment['DEBUGPROXY_TARGET'] = this.options.port
   }
 
-  injectProxyCode() {
+  injectDebugFunction() {
     this.serverless.cli.log('/!\ WARNING /!\: Replacing pack with Debug Proxy one...');
 
     // The proxy is made on nodejs
