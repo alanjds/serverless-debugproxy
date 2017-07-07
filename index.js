@@ -31,6 +31,7 @@ class DebugproxyPlugin {
   constructor(serverless, options) {
     this.serverless = serverless;
     this.options = options;
+    this.options._debugproxy_should_inject = false;
 
     this.commands = {
       debug: {
@@ -48,7 +49,7 @@ class DebugproxyPlugin {
           'injectenvs', // To be used by tunnelize
           'tunnelize',
           'injectenvs', // To be fixed for debugfunction
-          'injectdebugfunction',
+          'markinjectdebugfunction',
           'deploy',
         ],
         commands: {
@@ -88,9 +89,13 @@ class DebugproxyPlugin {
       'debug:tunnelize:tunnelize': () => BbPromise.bind(this).then(this.tunnelize),
 
       'debug:injectenvs': () => BbPromise.bind(this).then(this.injectEnvs),
-      'debug:tunnelize:injectenvs': BbPromise.bind(this).then(this.injectEnvs),
+      'debug:tunnelize:injectenvs': () => BbPromise.bind(this).then(this.injectEnvs),
 
-      'debug:injectdebugfunction': () => BbPromise.bind(this).then(this.injectDebugFunction),
+      // Hook the package injector on the SLS deployment
+      'package:createDeploymentArtifacts': () => BbPromise.bind(this).then(this.injectDebugFunction),
+      'deploy:function:packageFunction': () => BbPromise.bind(this).then(this.injectDebugFunction),
+
+      'debug:markinjectdebugfunction': () => BbPromise.bind(this).then(this.markInjectDebugFunction),
       'debug:deploy': () => BbPromise.bind(this).then(this.debugDeploy),
     };
   }
@@ -137,8 +142,20 @@ class DebugproxyPlugin {
     provider.environment['DEBUGPROXY_TARGET'] = this.options.port
   }
 
+  markInjectDebugFunction() {
+    this.serverless.cli.log('Debug Proxy: Enabled.');
+    this.options._debugproxy_should_inject = true;
+  }
+
   injectDebugFunction() {
-    this.serverless.cli.log('/!\ WARNING /!\: Replacing pack with Debug Proxy one...');
+    if (this.options._debugproxy_should_inject == false){
+      this.serverless.cli.log('Debug Proxy: Disabled!');
+      return
+    }else{
+      this.serverless.cli.log('Debug Proxy: Enabled!');
+    }
+
+    this.serverless.cli.log('/!\\ WARNING /!\\: Replacing pack with Debug Proxy one...');
 
     // The proxy is made on nodejs
     this.serverless.service.provider.runtime = 'nodejs6.10';
