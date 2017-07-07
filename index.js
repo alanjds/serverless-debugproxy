@@ -129,8 +129,6 @@ class DebugproxyPlugin {
   }
 
   injectEnvs() {
-    this.serverless.cli.log('WARN: injectEnvs ran.');
-
     var provider = this.serverless.service.provider;
     if (!provider.environment){
       provider.environment = {};
@@ -143,16 +141,15 @@ class DebugproxyPlugin {
   }
 
   markInjectDebugFunction() {
-    this.serverless.cli.log('Debug Proxy: Enabled.');
     this.options._debugproxy_should_inject = true;
   }
 
   injectDebugFunction() {
     if (this.options._debugproxy_should_inject == false){
-      this.serverless.cli.log('Debug Proxy: Disabled!');
+      this.serverless.cli.log('Debug Proxy: Disabled.');
       return
     }else{
-      this.serverless.cli.log('Debug Proxy: Enabled!');
+      this.serverless.cli.log('Debug Proxy: Enabled.');
     }
 
     this.serverless.cli.log('/!\\ WARNING /!\\: Replacing pack with Debug Proxy one...');
@@ -173,8 +170,6 @@ class DebugproxyPlugin {
   }
 
   debugDeploy() {
-    this.serverless.cli.log('WARN: debugDeploy ran.');
-
     return this.serverless.pluginManager.spawn('deploy');
   }
 }
