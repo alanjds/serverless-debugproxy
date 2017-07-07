@@ -137,7 +137,7 @@ class DebugproxyPlugin {
     this.options.host = this.options.host || 'localhost';
     provider.environment['DEBUGPROXY_HOST'] = this.options.host
     this.options.port = this.options.port || 5000;
-    provider.environment['DEBUGPROXY_TARGET'] = this.options.port
+    provider.environment['DEBUGPROXY_PORT'] = this.options.port
   }
 
   markInjectDebugFunction() {
