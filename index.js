@@ -81,8 +81,8 @@ class DebugproxyPlugin {
     };
     this.hooks = {
       // I would like to use just one hook, but am still newbie here.
-      'debug:tunnelize:tunnelize': () => BbPromise.bind(this).then(this.tunnelize),
       'debug:tunnelize': () => BbPromise.bind(this).then(this.tunnelize),
+      'debug:tunnelize:tunnelize': () => BbPromise.bind(this).then(this.tunnelize),
 
       'debug:injectenvs': () => BbPromise.bind(this).then(this.injectEnvs),
       'debug:injectproxycode': () => BbPromise.bind(this).then(this.injectProxyCode),
