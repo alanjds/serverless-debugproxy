@@ -42,9 +42,9 @@ class DebugproxyPlugin {
           },
         },
         lifecycleEvents: [
-          'injectenvs',
+          'injectenvs', // To be used by tunnelize
           'tunnelize',
-          'injectenvs',
+          'injectenvs', // To be fixed for debugfunction
           'injectdebugfunction',
           'deploy',
         ],
