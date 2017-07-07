@@ -12,11 +12,14 @@ module.exports.debugfunction = (event, context, callback) => {
   const post_options = {
     host: target_host,
     port: target_port,
-    path: '/'
+    method: 'POST',
+    path: '/',
   };
 
-  http.post(post_options, (res) => {
+  http.request(post_options, (res) => {
+    console.log('DEBUGPROXY ANSWER STATUS: ' + res.statusCode);
     console.log('DEBUGPROXY ANSWER HEADERS: ' + JSON.stringify(res.headers));
+    res.setEncoding('utf8');
 
     res.on('data', (chunk) => {
       //do something with chunk
@@ -43,6 +46,12 @@ module.exports.debugfunction = (event, context, callback) => {
       };
       callback(null, response);
     });
+
+    // Send the payload to be processed on the dev machine.
+    req.write('DEADBEEF!\n');
+
+    // Start the show!
+    req.end();
 
   }).on("error", (err) => {
     console.log("Got error: " + err.message);
