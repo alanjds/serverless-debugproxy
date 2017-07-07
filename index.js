@@ -109,7 +109,7 @@ class DebugproxyPlugin {
         reject(err);
       });
       return (resolve, reject)
-    }).then((resolve, reject) => {
+    }).then(() => {
       // Localhost port passed to ngrok. Replace with external tunnel one.
       this.options.port = port;
       this.options.host = host;
