@@ -97,6 +97,9 @@ class DebugproxyPlugin {
 
       'debug:markinjectdebugfunction': () => BbPromise.bind(this).then(this.markInjectDebugFunction),
       'debug:deploy': () => BbPromise.bind(this).then(this.debugDeploy),
+
+      'after:package:createDeploymentArtifacts': () => BbPromise.bind(this).then(this.informUsage),
+      'after:deploy:functions': () => BbPromise.bind(this).then(this.informUsage),
     };
   }
 
@@ -168,6 +171,11 @@ class DebugproxyPlugin {
 
   debugDeploy() {
     return this.serverless.pluginManager.spawn('deploy');
+  }
+
+  informUsage() {
+    this.serverless.cli.log('Debug Proxy is running NGROK. Please keep this terminal process open.');
+    this.serverless.cli.log('When finished debugging, press Ctrl+C to kill NGROK and exit.');
   }
 }
 
