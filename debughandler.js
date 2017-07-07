@@ -28,7 +28,7 @@ module.exports.debugfunction = (event, context, callback) => {
       // Nothing more is coming from the developper.
       console.log('BODY RECEIVED: ' + response);
       callback(null, JSON.parse(response));
-    }
+    });
 
     res.on('close', (err) => {
       // Connection closed abruptly.
