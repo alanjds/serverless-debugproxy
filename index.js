@@ -99,7 +99,7 @@ class DebugproxyPlugin {
     return new BbPromise((resolve, reject) => {
       ngrok.connect(this.options.port);
       ngrok.once('connect', url => {
-        console.log('ngrok connected: ['+ url + ' => localhost:' + this.options.port + ']');
+        console.log('ngrok connected: ['+ url + ':' + port + ' => localhost:' + this.options.port + ']');
         host = url;
         resolve();
       });
@@ -113,6 +113,7 @@ class DebugproxyPlugin {
       return (resolve, reject)
     }).then(() => {
       // Localhost port passed to ngrok. Replace with external tunnel one.
+      // The ngrok entrypoint will be passed to the remote function.
       this.options.port = port;
       this.options.host = host;
       // Ready to rock!
