@@ -20,8 +20,11 @@
 
 const BbPromise = require('bluebird');
 const http = require('http');
-const fs = require('fs');
+const fse = require('fs-extra');
+const path = require('path');
 const ngrok = require('ngrok');
+
+BbPromise.promisifyAll(fse);
 
 
 class DebugproxyPlugin {
