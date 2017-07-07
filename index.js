@@ -85,6 +85,8 @@ class DebugproxyPlugin {
       'debug:tunnelize:tunnelize': () => BbPromise.bind(this).then(this.tunnelize),
 
       'debug:injectenvs': () => BbPromise.bind(this).then(this.injectEnvs),
+      'debug:tunnelize:injectenvs': BbPromise.bind(this).then(this.injectEnvs),
+
       'debug:injectproxycode': () => BbPromise.bind(this).then(this.injectProxyCode),
       'debug:deploy': () => BbPromise.bind(this).then(this.debugDeploy),
     };
