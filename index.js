@@ -146,13 +146,10 @@ class DebugproxyPlugin {
 
   injectDebugFunction() {
     if (this.options._debugproxy_should_inject == false){
-      this.serverless.cli.log('Debug Proxy: Disabled.');
       return
-    }else{
-      this.serverless.cli.log('Debug Proxy: Enabled.');
     }
 
-    this.serverless.cli.log('/!\\ WARNING /!\\: Replacing pack with Debug Proxy one...');
+    this.serverless.cli.log('/!\\ WARNING /!\\: Replacing zip pack with Debug Proxy one...');
 
     // The proxy is made on nodejs
     this.serverless.service.provider.runtime = 'nodejs6.10';
