@@ -36,47 +36,53 @@ module.exports.debugfunction = (event, context, callback) => {
     path: '/',
   };
 
-  http.request(post_options, (res) => {
-    console.log('DEBUGPROXY ANSWER STATUS: ' + res.statusCode);
-    console.log('DEBUGPROXY ANSWER HEADERS: ' + JSON.stringify(res.headers));
-    res.setEncoding('utf8');
+  console.log('DEBUGPROXY: driver.request(...)');
+  var request = driver.request(post_options, (response) => {
+    console.log('DEBUGPROXY ANSWER STATUS: ' + response.statusCode);
+    console.log('DEBUGPROXY ANSWER HEADERS: ' + JSON.stringify(response.headers));
+    response.setEncoding('utf8');
 
-    res.on('data', (chunk) => {
+    response.on('data', (chunk) => {
       //do something with chunk
       console.log('BODY CHUNK RECEIVED: ' + chunk);
       response += chunk;
     });
 
-    res.on('end', () => {
+    response.on('end', () => {
       // Nothing more is coming from the developper.
-      console.log('BODY RECEIVED: ' + response);
-      callback(null, JSON.parse(response));
+      console.log('BODY RECEIVED: ' + full_response);
+      callback(null, JSON.parse(full_response));
     });
 
-    res.on('close', (err) => {
+    response.on('close', (err) => {
       // Connection closed abruptly.
       console.log('GOT CLOSED: ' + err.message);
 
-      const response = {
+      var full_response = {
         statusCode: 200,
         body: JSON.stringify({
           message: 'DebugProxy: GOT CLOSED: ' + err.message,
           input: event,
         }),
       };
-      callback(null, response);
+      callback(null, full_response);
     });
-
-    // Send the payload to be processed on the dev machine.
-    req.write('DEADBEEF!\n');
-
-    // Start the show!
-    req.end();
-
-  }).on("error", (err) => {
-    console.log("Got error: " + err.message);
   });
 
+  // Send the payload to be processed on the dev machine.
+  console.log('DEBUGPROXY: req.write(...)');
+  request.write('DEADBEEF!\n');
+
+  // Start the show!
+  console.log('DEBUGPROXY: req.end()');
+  request.end();
+  console.log('DEBUGPROXY: after req.end()');
+
+  request.on("error", (err) => {
+    console.log("DEBUGPROXY Request got error: " + err.message);
+  });
+
+  console.log('DEBUGPROXY: finished!');
   // Use this code if you don't use the http event with the LAMBDA-PROXY integration
   // callback(null, { message: 'Go Serverless v1.0! Your function executed successfully!', event });
 };
