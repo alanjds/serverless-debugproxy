@@ -137,6 +137,8 @@ class DebugproxyPlugin {
       provider.environment = {};
     }
 
+    provider.timeout = 5 * 60;  // 5 min should do, right?
+
     this.options.host = this.options.host || 'localhost';
     provider.environment['DEBUGPROXY_HOST'] = this.options.host
     this.options.port = this.options.port || 5000;
