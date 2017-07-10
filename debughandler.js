@@ -45,13 +45,17 @@ module.exports.debugfunction = (event, context, callback) => {
     response.on('data', (chunk) => {
       //do something with chunk
       console.log('BODY CHUNK RECEIVED: ' + chunk);
-      response += chunk;
+      full_response = full_response + chunk;
+      console.log('BODY RECEIVED TIL NOW: ' + full_response);
     });
 
     response.on('end', () => {
       // Nothing more is coming from the developper.
-      console.log('BODY RECEIVED: ' + full_response);
-      callback(null, JSON.parse(full_response));
+      console.log('BODY RECEIVED COMPLETE: ' + full_response);
+      var final_response = JSON.parse(full_response);
+      console.log('FINAL RESPONSE:');
+      console.log(final_response);
+      callback(null, final_response);
     });
 
     response.on('close', (err) => {
