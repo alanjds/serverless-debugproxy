@@ -55,7 +55,7 @@ module.exports.debugfunction = (event, context, callback) => {
       var final_response = JSON.parse(full_response);
       console.log('FINAL RESPONSE:');
       console.log(final_response);
-      callback(null, final_response);
+      callback(null, final_response, event);
     });
 
     response.on('close', (err) => {
