@@ -1,16 +1,36 @@
 'use strict';
 
 const http = require('http');
+const https = require("https");
+const url = require('url');
 
-const target_host = process.env['DEBUGPROXY_HOST'];
-const target_port = process.env['DEBUGPROXY_PORT'];
+console.log('DEBUGPROXY_HOST: ' + process.env['DEBUGPROXY_HOST']);
+const target_url = url.parse(process.env['DEBUGPROXY_HOST']);
 
 
 module.exports.debugfunction = (event, context, callback) => {
-  var response = '';
+  console.log('DEBUGPROXY STARTING.');
 
-  const post_options = {
-    host: target_host,
+  const payload = JSON.stringify({
+    'event': event,
+    'context': context,
+  });
+
+  console.log('DEBUGPROXY PAYLOAD: ' + payload);
+
+  var full_response = '';
+
+  # Request dance adapted from: https://stackoverflow.com/a/9577651/798575
+  var driver = https;
+  var target_port = 443;
+  if (target_url.protocol == 'http:'){
+    driver = http;
+    target_port = 80;
+  }
+  console.log('DEBUGPROXY PROTOCOL: ' + target_url.protocol);
+
+  var post_options = {
+    host: target_url.hostname,
     port: target_port,
     method: 'POST',
     path: '/',
