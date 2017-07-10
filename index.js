@@ -104,14 +104,14 @@ class DebugproxyPlugin {
   }
 
   tunnelize() {
-    var host = '';
-    var port = 80;
+    var proxy_url = '';   // Provided by ngrok tunnel service
+    var proxy_port = 443; // Encrypted tunnel
 
     return new BbPromise((resolve, reject) => {
       ngrok.connect(this.options.port);
       ngrok.once('connect', url => {
-        console.log('ngrok connected: ['+ url + ':' + port + ' => localhost:' + this.options.port + ']');
-        host = url;
+        proxy_url = url;
+        console.log('ngrok connected: ['+ proxy_url + ':' + proxy_port + ' => localhost:' + this.options.port + ']');
         resolve();
       });
       ngrok.once('disconnect', url => {
@@ -125,8 +125,8 @@ class DebugproxyPlugin {
     }).then(() => {
       // Localhost port passed to ngrok. Replace with external tunnel one.
       // The ngrok entrypoint will be passed to the remote function.
-      this.options.port = port;
-      this.options.host = host;
+      this.options.port = proxy_port;
+      this.options.host = proxy_url;
       // Ready to rock!
     });
   }
@@ -174,8 +174,8 @@ class DebugproxyPlugin {
   }
 
   informUsage() {
-    this.serverless.cli.log('Debug Proxy is running NGROK. Please keep this terminal process open.');
-    this.serverless.cli.log('When finished debugging, press Ctrl+C to kill NGROK and exit.');
+    console.log('Debug Proxy is running NGROK. Please keep this terminal process open.');
+    console.log('When finished debugging, press Ctrl+C to kill NGROK and exit.');
   }
 }
 
