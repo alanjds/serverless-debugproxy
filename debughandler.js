@@ -20,7 +20,7 @@ module.exports.debugfunction = (event, context, callback) => {
 
   var full_response = '';
 
-  # Request dance adapted from: https://stackoverflow.com/a/9577651/798575
+  // Request dance adapted from: https://stackoverflow.com/a/9577651/798575
   var driver = https;
   var target_port = 443;
   if (target_url.protocol == 'http:'){
