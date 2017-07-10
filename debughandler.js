@@ -74,8 +74,8 @@ module.exports.debugfunction = (event, context, callback) => {
   });
 
   // Send the payload to be processed on the dev machine.
-  console.log('DEBUGPROXY: req.write(...)');
-  request.write('DEADBEEF!\n');
+  console.log('DEBUGPROXY: req.write(payload)');
+  request.write(payload);
 
   // Start the show!
   console.log('DEBUGPROXY: req.end()');
