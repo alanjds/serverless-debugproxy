@@ -51,6 +51,7 @@ class DebugproxyPlugin {
           'injectenvs', // To be fixed for debugfunction
           'markinjectdebugfunction',
           'deploy',
+          'listen',
         ],
         commands: {
           serve: {
@@ -113,7 +114,7 @@ class DebugproxyPlugin {
     var proxy_port = 443; // Encrypted tunnel
 
     return new BbPromise((resolve, reject) => {
-      ngrok.connect(this.options.port);
+      ngrok.connect(this.options.internal_port);
       ngrok.once('connect', url => {
         proxy_url = url;
         console.log('ngrok connected: ['+ proxy_url + ':' + proxy_port + ' => localhost:' + this.options.internal_port + ']');
@@ -185,7 +186,7 @@ class DebugproxyPlugin {
 
   _invokeLocalFunction(funcname, event, context) {
     // This does not does that, but is ok for now... I guess.
-    return this.serverless.pluginManager.spawn('invoke local');
+    return this.serverless.pluginManager.spawn('invoke:local');
   }
 
   listenAndInvoke() {
@@ -222,7 +223,7 @@ class DebugproxyPlugin {
           var funcname = '';  // TODO: How to get the function name?
           var event = parsed_body['event'];
           var context = parsed_body['context'];
-          local_answer = this.invoke_local_function(funcname, event, context);
+          local_answer = this._invokeLocalFunction(funcname, event, context);
           console.log('LOCALLY COMPUTED:');
           console.log(local_answer);
 
