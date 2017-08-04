@@ -71,7 +71,9 @@ class DebugproxyPlugin {
           tunnelize: {
             usage: 'Create a tunnel to allow the Function to access your dev machine',
             lifecycleEvents: [
+              'injectenvs', // To be used by tunnelize
               'tunnelize',
+              'listen',
             ],
             options: {
               port: {
@@ -100,6 +102,9 @@ class DebugproxyPlugin {
 
       'after:package:createDeploymentArtifacts': () => BbPromise.bind(this).then(this.informUsage),
       'after:deploy:functions': () => BbPromise.bind(this).then(this.informUsage),
+
+      'debug:listen': () => BbPromise.bind(this).then(this.listenAndInvoke),
+      'debug:tunnelize:listen': () => BbPromise.bind(this).then(this.listenAndInvoke),
     };
   }
 
@@ -111,7 +116,7 @@ class DebugproxyPlugin {
       ngrok.connect(this.options.port);
       ngrok.once('connect', url => {
         proxy_url = url;
-        console.log('ngrok connected: ['+ proxy_url + ':' + proxy_port + ' => localhost:' + this.options.port + ']');
+        console.log('ngrok connected: ['+ proxy_url + ':' + proxy_port + ' => localhost:' + this.options.internal_port + ']');
         resolve();
       });
       ngrok.once('disconnect', url => {
@@ -125,8 +130,8 @@ class DebugproxyPlugin {
     }).then(() => {
       // Localhost port passed to ngrok. Replace with external tunnel one.
       // The ngrok entrypoint will be passed to the remote function.
-      this.options.port = proxy_port;
-      this.options.host = proxy_url;
+      this.options.external_port = proxy_port;
+      this.options.external_host = proxy_url;
       // Ready to rock!
     });
   }
@@ -139,10 +144,13 @@ class DebugproxyPlugin {
 
     provider.timeout = 5 * 60;  // 5 min should do, right?
 
-    this.options.host = this.options.host || 'localhost';
-    provider.environment['DEBUGPROXY_HOST'] = this.options.host
-    this.options.port = this.options.port || 5000;
-    provider.environment['DEBUGPROXY_PORT'] = this.options.port
+    this.options.internal_host = this.options.host || '0.0.0.0';
+    this.options.internal_port = this.options.port || 5000;
+
+    this.options.external_host = this.options.external_host || 'localhost';
+    provider.environment['DEBUGPROXY_HOST'] = this.options.external_host;
+    this.options.external_port = this.options.external_port || 5000;
+    provider.environment['DEBUGPROXY_PORT'] = this.options.external_port;
   }
 
   markInjectDebugFunction() {
@@ -173,6 +181,73 @@ class DebugproxyPlugin {
 
   debugDeploy() {
     return this.serverless.pluginManager.spawn('deploy');
+  }
+
+  _invokeLocalFunction(funcname, event, context) {
+    // This does not does that, but is ok for now... I guess.
+    return this.serverless.pluginManager.spawn('invoke local');
+  }
+
+  listenAndInvoke() {
+    return new BbPromise((resolve, reject) => {
+      var server = http.createServer();
+      server.on('request', (request, response) => {
+        console.log('MOTHERSHIP CONNECTED...');
+        var body = [];
+
+        request.on('data', (chunk) => {
+          console.log('BODY CHUNK RECEIVED BY DEV: ' + chunk);
+          body.push(chunk);
+          console.log('BODY RECEIVED BY DEV TIL NOW: ' + body);
+        });
+
+        request.on('end', () => {
+          // Nothing more is coming from the mothership.
+          console.log('BODY RECEIVED BY DEV COMPLETE: ' + body);
+          body = Buffer.concat(body).toString();
+          // at this point, `body` has the entire request body stored in it as a string
+
+          try {
+            var parsed_body = JSON.parse(body); // Should have "event" and "context"
+          }catch(err) {
+            response.statusCode = 400;
+            response.end('JSON payload expected.');
+            return
+          }
+
+          console.log('FINAL RECEIVED:');
+          console.log(parsed_body);
+
+          // (re)call it locally.
+          var funcname = '';  // TODO: How to get the function name?
+          var event = parsed_body['event'];
+          var context = parsed_body['context'];
+          local_answer = this.invoke_local_function(funcname, event, context);
+          console.log('LOCALLY COMPUTED:');
+          console.log(local_answer);
+
+          // Prepare to send the local answer back to mothership
+          response.statusCode = 200;
+          response.setHeader('Content-Type', 'application/json');
+          //response.write('{"DEAD":"BEEF"}');
+          response.end(local_answer);
+        });
+
+        request.on('error', (err) => {
+          // This prints the error message and stack trace to `stderr`.
+          console.error(err.stack);
+          reject(err);
+        });
+      });
+
+      // Start the show!
+      server.listen(this.options.internal_port, this.options.internal_host, () => {
+        console.log('listening the mothership on: ['+ this.options.internal_host + ':' + this.options.internal_port +']');
+        resolve();
+      })
+
+      return (resolve, reject);
+    });
   }
 
   informUsage() {
