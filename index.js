@@ -184,8 +184,10 @@ class DebugproxyPlugin {
     return this.serverless.pluginManager.spawn('deploy');
   }
 
-  _invokeLocalFunction(funcname, event, context) {
-    // This does not does that, but is ok for now... I guess.
+  _invokeLocalFunction(event, context) {
+    this.options.data = JSON.stringify(event);
+    console.log('INVOKING w/: ');
+    console.log(this.options.data);
     return this.serverless.pluginManager.spawn('invoke:local');
   }
 
@@ -220,18 +222,22 @@ class DebugproxyPlugin {
           console.log(parsed_body);
 
           // (re)call it locally.
-          var funcname = '';  // TODO: How to get the function name?
           var event = parsed_body['event'];
           var context = parsed_body['context'];
-          local_answer = this._invokeLocalFunction(funcname, event, context);
-          console.log('LOCALLY COMPUTED:');
-          console.log(local_answer);
+          var local_answer = this._invokeLocalFunction(event, context); // Is a Promise.
+          local_answer.then(function(answer){
+            console.log('LOCALLY COMPUTED:');
+            console.log(answer);
 
-          // Prepare to send the local answer back to mothership
-          response.statusCode = 200;
-          response.setHeader('Content-Type', 'application/json');
-          //response.write('{"DEAD":"BEEF"}');
-          response.end(local_answer);
+            // Prepare to send the local answer back to mothership
+            response.statusCode = 200;
+            response.setHeader('Content-Type', 'application/json');
+            //response.write('{"DEAD":"BEEF"}');
+            response.end(answer || '');
+          }).catch(function(err){
+            console.error('LOCALLY BROKEN:');
+            console.error(err);
+          });
         });
 
         request.on('error', (err) => {
