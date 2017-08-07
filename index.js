@@ -188,7 +188,7 @@ class DebugproxyPlugin {
     this.options.data = JSON.stringify(event);
     console.log('INVOKING w/: ');
     console.log(this.options.data);
-    return this.serverless.pluginManager.spawn('invoke:local');
+    return this.serverless.pluginManager.spawn('invoke:local'); // Is a Promise.
   }
 
   listenAndInvoke() {
@@ -204,7 +204,7 @@ class DebugproxyPlugin {
           console.log('BODY RECEIVED BY DEV TIL NOW: ' + body);
         });
 
-        request.on('end', () => {
+        request.on('end', async () => {
           // Nothing more is coming from the mothership.
           console.log('BODY RECEIVED BY DEV COMPLETE: ' + body);
           body = Buffer.concat(body).toString();
@@ -224,20 +224,15 @@ class DebugproxyPlugin {
           // (re)call it locally.
           var event = parsed_body['event'];
           var context = parsed_body['context'];
-          var local_answer = this._invokeLocalFunction(event, context); // Is a Promise.
-          local_answer.then(function(answer){
-            console.log('LOCALLY COMPUTED:');
-            console.log(answer);
+          var answer = await this._invokeLocalFunction(event, context); // Is a Promise.
+          console.log('LOCALLY COMPUTED:');
+          console.log(answer);
 
-            // Prepare to send the local answer back to mothership
-            response.statusCode = 200;
-            response.setHeader('Content-Type', 'application/json');
-            //response.write('{"DEAD":"BEEF"}');
-            response.end(answer || '');
-          }).catch(function(err){
-            console.error('LOCALLY BROKEN:');
-            console.error(err);
-          });
+          // Prepare to send the local answer back to mothership
+          response.statusCode = 200;
+          response.setHeader('Content-Type', 'application/json');
+          //response.write('{"DEAD":"BEEF"}');
+          response.end(answer || '');
         });
 
         request.on('error', (err) => {
